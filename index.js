@@ -778,11 +778,6 @@ for (let i = 0; i < scoreDifferentials.length; i++) {
         console.log(i + ',' + scoreDifferentials[i]);
     }
 }
-console.log('');
-
-console.log('Ties for First');
-console.log('--------------');
-
 
 //FUNCTIONS!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
