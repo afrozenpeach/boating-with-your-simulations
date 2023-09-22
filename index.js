@@ -1,5 +1,5 @@
 let iterations = 1000000;
-let players = 2;
+let players = 6;
 
 let deckConfig = {
     'deck6': [
@@ -499,6 +499,8 @@ let deckConfig = {
     ]
 }
 
+let allEqual = arr => arr.every(val => val === arr[0]);
+
 let scores = [];
 
 let weatherScores = [];
@@ -509,7 +511,16 @@ let waterScores = [];
 let sunScores = [];
 let boatScores = [];
 let trashScores = [];
-let scoreDifferentials = [];
+let rankingAverages = [];
+let tiedGames = 0;
+let threeWayTiedGames = 0;
+let fourWayTiedGames = 0;
+let fiveWayTiedGames = 0;
+let sixWayTiedGames = 0;
+
+for (let i = 1; i <= players; i++) {
+    rankingAverages[i] = [];
+}
 
 for (let i = 0; i < 1000; i++) {
     scores.push(0);
@@ -521,8 +532,9 @@ for (let i = 0; i < 1000; i++) {
     sunScores.push(0);
     boatScores.push(0);
     trashScores.push(0);
-    scoreDifferentials.push(0);
 }
+
+let batchStartTime = Date.now();
 
 for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
     let finalDeck = []
@@ -569,12 +581,6 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
             'speedCount': 0,
             'weatherCount': 0,
             'musicCount': 0,
-            'legalSubstanceBottleCount': 0,
-            'legalSubstancePipeCount': 0,
-            'legalSubstanceSandwichCount': 0,
-            'legalSubstanceStickCount': 0,
-            'legalSubstanceCanCount': 0,
-            'legalSubstanceHotDogCount': 0,
             'trashCount': 0,
             'boatSize': 0,
             'waterScore': 0,
@@ -616,18 +622,7 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
     countTableaus(playerTableaus);
     scoreTableaus(playerTableaus);
 
-    let lowScore = 1000;
-    let highScore = 0;
-
     for (let tableau of playerTableaus) {
-        if (tableau.finalScore < lowScore) {
-            lowScore = tableau.finalScore;
-        }
-
-        if (tableau.finalScore > highScore) {
-            highScore = tableau.finalScore;
-        }
-
         if (!scores[String(tableau.finalScore)]) {
             scores[String(tableau.finalScore)] = 1;
         } else {
@@ -683,12 +678,53 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
         }
     }
 
-    if (!scoreDifferentials[String(highScore - lowScore)]) {
-        scoreDifferentials[String(highScore - lowScore)] = 1;
-    } else {
-        scoreDifferentials[String(highScore - lowScore)]++;
+    let sortedPlayers = playerTableaus.sort((a, b) => b.finalScore - a.finalScore);
+
+    for (let i = 0; i < players; i++) {
+        rankingAverages[i+1].push(sortedPlayers[i].finalScore);
+    }
+
+    if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore])) {
+        tiedGames++;
+    }
+
+    if (players >= 3) {
+        if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore, sortedPlayers[2].finalScore])) {
+            threeWayTiedGames++;
+        }
+    }
+
+    if (players >= 4) {
+        if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore, sortedPlayers[2].finalScore, sortedPlayers[3].finalScore])) {
+            fourWayTiedGames++;
+        }
+    }
+
+    if (players >= 5) {
+        if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore, sortedPlayers[2].finalScore, sortedPlayers[3].finalScore, sortedPlayers[4].finalScore])) {
+            fiveWayTiedGames++;
+        }
+    }
+
+    if (players >= 6) {
+        if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore, sortedPlayers[2].finalScore, sortedPlayers[3].finalScore, sortedPlayers[4].finalScore, sortedPlayers[5].finalScore])) {
+            sixWayTiedGames++;
+        }
     }
 }
+
+let batchEndTime = Date.now();
+
+console.log('Execution time: ' + (batchEndTime - batchStartTime) + 'ms');
+console.log('Average execution time: ' + ((batchEndTime - batchStartTime) / iterations) + 'ms');
+console.log('');
+
+console.log('Two way tied games: ' + tiedGames);
+console.log('Three way tied games: ' + threeWayTiedGames);
+console.log('Four way tied games: ' + fourWayTiedGames);
+console.log('Five way tied games: ' + fiveWayTiedGames);
+console.log('Six way tied games: ' + sixWayTiedGames);
+console.log('');
 
 console.log('Weather Scores');
 console.log('--------------');
@@ -769,15 +805,6 @@ for (let i = 0; i < scores.length; i++) {
         console.log(i + ',' + scores[i]);
     }
 }
-console.log('');
-
-console.log('Score Differentials');
-console.log('-------------------');
-for (let i = 0; i < scoreDifferentials.length; i++) {
-    if (scoreDifferentials[i] != 0) {
-        console.log(i + ',' + scoreDifferentials[i]);
-    }
-}
 
 //FUNCTIONS!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -826,26 +853,74 @@ function assignCard(card, tableau) {
         case 'Legal Substance':
             switch (card.subname) {
                 case 'Bottle':
-                case 'Hot Dog':
-                case 'Sandwich':
-                    if (!tableau.human1Used) {
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Bottle')) {
                         tableau.human1.push(card);
                         tableau.human1Used = true;
-                    } else if (!tableau.human2Used) {
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Bottle')) {
                         tableau.human2.push(card);
                         tableau.human2Used = true;
-                    } else if (!tableau.doggoUsed) {
+                    } else if (!tableau.doggoUsed && !boaterContains(tableau.doggo, 'Legal Substance', 'Bottle')) {
                         tableau.doggo.push(card);
                         tableau.doggoUsed = true;
+                    } else {
+                        tableau.trash.push(card);
+                    }
+                    break;
+                case 'Hot Dog':
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Hot Dog')) {
+                        tableau.human1.push(card);
+                        tableau.human1Used = true;
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Hot Dog')) {
+                        tableau.human2.push(card);
+                        tableau.human2Used = true;
+                    } else if (!tableau.doggoUsed && !boaterContains(tableau.doggo, 'Legal Substance', 'Hot Dog')) {
+                        tableau.doggo.push(card);
+                        tableau.doggoUsed = true;
+                    } else {
+                        tableau.trash.push(card);
+                    }
+                    break;
+                case 'Sandwich':
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Sandwich')) {
+                        tableau.human1.push(card);
+                        tableau.human1Used = true;
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Sandwich')) {
+                        tableau.human2.push(card);
+                        tableau.human2Used = true;
+                    } else if (!tableau.doggoUsed && !boaterContains(tableau.doggo, 'Legal Substance', 'Sandwich')) {
+                        tableau.doggo.push(card);
+                        tableau.doggoUsed = true;
+                    } else {
+                        tableau.trash.push(card);
                     }
                     break;
                 case 'Pipe':
-                case 'Can':
-                case 'Stick':
-                    if (!tableau.human1Used) {
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Pipe')) {
                         tableau.human1.push(card);
                         tableau.human1Used = true;
-                    } else if (!tableau.human2Used) {
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Pipe')) {
+                        tableau.human2.push(card);
+                        tableau.human2Used = true;
+                    } else {
+                        tableau.trash.push(card);
+                    }
+                    break;
+                case 'Can':
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Can')) {
+                        tableau.human1.push(card);
+                        tableau.human1Used = true;
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Can')) {
+                        tableau.human2.push(card);
+                        tableau.human2Used = true;
+                    } else {
+                        tableau.trash.push(card);
+                    }
+                    break;
+                case 'Stick':
+                    if (!tableau.human1Used && !boaterContains(tableau.human1, 'Legal Substance', 'Stick')) {
+                        tableau.human1.push(card);
+                        tableau.human1Used = true;
+                    } else if (!tableau.human2Used && !boaterContains(tableau.human2, 'Legal Substance', 'Stick')) {
                         tableau.human2.push(card);
                         tableau.human2Used = true;
                     } else {
@@ -1000,12 +1075,6 @@ function scoreTableaus(playerTableaus) {
     let mostMusic = 0;
     let leastSpeed = deckConfig['deck' + players].filter(c => c.name === 'Speed')[0].count;
     let mostSpeed = 0;
-    let mostPipe = 0;
-    let mostSandwich = 0;
-    let mostHotDog = 0;
-    let mostStick = 0;
-    let mostCan = 0;
-    let mostBottle = 0;
 
     for (let h = 0; h < players; h++) {
         let tableau = playerTableaus[h];
@@ -1035,30 +1104,6 @@ function scoreTableaus(playerTableaus) {
 
         if (tableau.speedCount > mostSpeed) {
             mostSpeed = tableau.speedCount;
-        }
-
-        if (tableau.legalSubstanceBottleCount > mostBottle) {
-            mostBottle = tableau.legalSubstanceBottleCount;
-        }
-
-        if (tableau.legalSubstancePipeCount > mostPipe) {
-            mostPipe = tableau.legalSubstancePipeCount;
-        }
-
-        if (tableau.legalSubstanceCanCount > mostCan) {
-            mostCan = tableau.legalSubstanceCanCount;
-        }
-
-        if (tableau.legalSubstanceHotDogCount > mostHotDog) {
-            mostHotDog = tableau.legalSubstanceHotDogCount;
-        }
-
-        if (tableau.legalSubstanceSandwichCount > mostSandwich) {
-            mostSandwich = tableau.legalSubstanceSandwichCount
-        }
-
-        if (tableau.legalSubstanceStickCount > mostStick) {
-            mostStick = tableau.legalSubstanceStickCount;
         }
 
         tableau.waterScore += waterCalculator(tableau.waterDoggoCount) + waterCalculator(tableau.waterHuman1Count) + waterCalculator(tableau.waterHuman2Count);
@@ -1107,29 +1152,7 @@ function scoreTableaus(playerTableaus) {
             tableau.speedScore += 10;
         }
 
-        if (tableau.legalSubstanceStickCount < mostStick) {
-            tableau.legalSubstanceScore += 3;
-        }
-
-        if (tableau.legalSubstanceSandwichCount < mostSandwich) {
-            tableau.legalSubstanceScore += 3;
-        }
-
-        if (tableau.legalSubstancePipeCount < mostPipe) {
-            tableau.legalSubstanceScore += 3;
-        }
-
-        if (tableau.legalSubstanceHotDogCount < mostHotDog) {
-            tableau.legalSubstanceScore += 3;
-        }
-
-        if (tableau.legalSubstanceCanCount < mostCan) {
-            tableau.legalSubstanceScore += 3;
-        }
-
-        if (tableau.legalSubstanceBottleCount < mostBottle) {
-            tableau.legalSubstanceScore += 3;
-        }
+        tableau.legalSubstanceScore = legalSubstanceCalculator(tableau.human1) + legalSubstanceCalculator(tableau.human2) + legalSubstanceCalculator(tableau.doggo);
     }
 
     for (let tableau of playerTableaus) {
@@ -1155,6 +1178,58 @@ function waterCalculator(count) {
             return 21;
         case 7:
             return 34;
+    }
+}
+
+function legalSubstanceCalculator(boater) {
+    let bottleCounted = boaterContains(boater, 'Legal Substance', 'Bottle') > 0;
+    let canCounted = boaterContains(boater, 'Legal Substance', 'Can') > 0;
+    let pipeCounted = boaterContains(boater, 'Legal Substance', 'Pipe') > 0;
+    let sandwichCounted = boaterContains(boater, 'Legal Substance', 'Sandwich') > 0;
+    let hotDogCounted = boaterContains(boater, 'Legal Substance', 'Hot Dog') > 0;
+    let stickCounted = boaterContains(boater, 'Legal Substance', 'Stick') > 0;
+
+    let count = 0;
+
+    if (bottleCounted) {
+        count++;
+    }
+
+    if (canCounted) {
+        count++;
+    }
+
+    if (pipeCounted) {
+        count++;
+    }
+
+    if (sandwichCounted) {
+        count++;
+    }
+
+    if (hotDogCounted) {
+        count++;
+    }
+
+    if (stickCounted) {
+        count++;
+    }
+
+    switch (count) {
+        case 0:
+            return 0;
+        case 1:
+            return 1;
+        case 2:
+            return 5;
+        case 3:
+            return 8;
+        case 4:
+            return 10;
+        case 5:
+            return 11;
+        case 6:
+            return 12;
     }
 }
 
