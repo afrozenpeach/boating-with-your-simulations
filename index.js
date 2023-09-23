@@ -1,5 +1,5 @@
 let iterations = 1000000;
-let players = 6;
+let players = 2;
 
 let deckConfig = {
     'deck6': [
@@ -1132,7 +1132,7 @@ function scoreTableaus(playerTableaus) {
             tableau.sunScore -= (tableau.sunHuman2Count - 2) * 2;
         }
 
-        tableau.trashScore = tableau.trashCount;
+        tableau.trashScore = tableau.trashCount * 3;
     }
 
     for (let tableau of playerTableaus) {
