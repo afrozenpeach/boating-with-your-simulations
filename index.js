@@ -1282,7 +1282,6 @@ function selectCards(tableau, mostWaterPreviousRound) {
                 shuffleArray(tableau.hand);
 
                 let cards = [];
-                let passedHand = [];
 
                 let myMostWater = tableau.waterDoggoCount;
                 if (tableau.waterHuman1Count > myMostWater) {
@@ -1292,8 +1291,6 @@ function selectCards(tableau, mostWaterPreviousRound) {
                 if (tableau.waterHuman2Count > myMostWater) {
                     myMostWater = tableau.waterHuman2Count;
                 }
-
-                shuffleArray(tableau.hand);
 
                 let waterCards = [];
                 let nonWaterCards = [];
@@ -1306,14 +1303,14 @@ function selectCards(tableau, mostWaterPreviousRound) {
                     }
                 })
 
-                if (myMostWater === 0 && myMostWater < mostWaterPreviousRound) {
+                if (myMostWater === 0 || myMostWater < mostWaterPreviousRound) {
                     cards[0] = waterCards.pop();
                 }
 
                 let weatherCards = [];
                 let nonWeatherCards = [];
 
-                nonWeatherCards.map(c => {
+                nonWaterCards.map(c => {
                     if (c.name === 'Weather') {
                         weatherCards.push(c);
                     } else {
@@ -1323,6 +1320,14 @@ function selectCards(tableau, mostWaterPreviousRound) {
 
                 if (!cards[0]) {
                     cards[0] = nonWeatherCards.pop();
+                }
+
+                if (!cards[0]) {
+                    cards[0] = weatherCards.pop();
+                }
+
+                if (!cards[0]) {
+                    cards[0] = waterCards.pop();
                 }
 
                 if (!cards[1]) {
@@ -1339,6 +1344,14 @@ function selectCards(tableau, mostWaterPreviousRound) {
 
                 if (!cards[2]) {
                     cards[2] = nonWeatherCards.pop();
+                }
+
+                if (!cards[1]) {
+                    cards[1] = waterCards.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = waterCards.pop();
                 }
 
                 cards.push(...waterCards);
