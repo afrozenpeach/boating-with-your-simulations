@@ -1,4 +1,4 @@
-let iterations = 10000000;
+let iterations = 1000000;
 let players = 6;
 
 let currentStrategyCount = 6;
@@ -1115,6 +1115,8 @@ function selectCards(tableau, mostWaterPreviousRound) {
             break;
         case 2: //I'm on a boat! Pass weather! Speed!
             {
+                shuffleArray(tableau.hand);
+
                 let cards = [];
                 let passedHand = [];
 
@@ -1277,6 +1279,8 @@ function selectCards(tableau, mostWaterPreviousRound) {
             break;
         case 3: //Maximize Water
             {
+                shuffleArray(tableau.hand);
+
                 let cards = [];
                 let passedHand = [];
 
@@ -1347,6 +1351,8 @@ function selectCards(tableau, mostWaterPreviousRound) {
             break;
         case 4: //Substances
             {
+                shuffleArray(tableau.hand);
+
                 let cards = [];
                 let passedHand = [];
                 let substanceCards = [];
@@ -1429,8 +1435,9 @@ function selectCards(tableau, mostWaterPreviousRound) {
             break;
         case 5: //Music
             {
+                shuffleArray(tableau.hand);
+
                 let cards = [];
-                let passedHand = [];
 
                 let musicCards = [];
                 let nonMusicCards = [];
@@ -1445,47 +1452,52 @@ function selectCards(tableau, mostWaterPreviousRound) {
 
                 cards[0] = musicCards.pop();
 
-                if (!cards[0]) {
-                    let card = nonMusicCards.pop();
+                let weatherCards = [];
+                let nonWeatherCards = [];
 
-                    while (card !== undefined && card.name === 'Weather') {
-                        if (!cards[1]) {
-                            cards[1] = card;
-                        } else if (!cards[2]) {
-                            cards[2] = card;
-                        } else {
-                            passedHand.push(card);
-                        }
-
-                        card = nonMusicCards.pop();
+                nonMusicCards.map(c => {
+                    if (c.name === 'Weather') {
+                        weatherCards.push(c);
+                    } else {
+                        nonWeatherCards.push(c);
                     }
+                });
 
-                    cards[0] = card;
+                if (!cards[0]) {
+                    cards[0] = nonWeatherCards.pop();
                 }
 
                 if (!cards[0]) {
-                    cards[0] = passedHand.pop();
+                    cards[0] = weatherCards.pop();
                 }
 
                 if (!cards[1]) {
-                    cards[1] = nonMusicCards.pop();
+                    cards[1] = weatherCards.pop();
                 }
 
                 if (!cards[2]) {
-                    cards[2] = nonMusicCards.pop();
+                    cards[2] = weatherCards.pop();
                 }
 
                 if (!cards[1]) {
-                    cards[1] = passedHand.pop();
+                    cards[1] = nonWeatherCards.pop();
                 }
 
                 if (!cards[2]) {
-                    cards[2] = passedHand.pop();
+                    cards[2] = nonWeatherCards.pop();
                 }
 
+                if (!cards[1]) {
+                    cards[1] = musicCards.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = musicCards.pop();
+                }
+
+                cards.push(...nonWeatherCards);
+                cards.push(...weatherCards);
                 cards.push(...musicCards);
-                cards.push(...nonMusicCards);
-                cards.push(...passedHand);
 
                 return cards;
             }
