@@ -543,7 +543,7 @@ for (let i = 0; i < 1000; i++) {
 let batchStartTime = Date.now();
 
 for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
-    let finalDeck = []
+    let finalDeck = [];
 
     for (let card of deckConfig['deck' + players]) {
         for (let i = 0; i < card.count; i++) {
@@ -1206,6 +1206,8 @@ function selectCards(tableau, mostWaterPreviousRound) {
                     return cards;
                 } else {
                     let speedCards = [];
+                    let doublyPassedHand = [];
+
                     tableau.hand.map(c => {
                         if (c.name === 'Speed') {
                             speedCards.push(c);
@@ -1224,7 +1226,7 @@ function selectCards(tableau, mostWaterPreviousRound) {
                             } else if (!cards[2]) {
                                 cards[2] = card;
                             } else {
-                                passedHand.push(card);
+                                doublyPassedHand.push(card);
                             }
 
                             card = passedHand.pop();
@@ -1249,8 +1251,17 @@ function selectCards(tableau, mostWaterPreviousRound) {
                         cards[2] = passedHand.pop();
                     }
 
+                    if (!cards[1]) {
+                        cards[1] = doublyPassedHand.pop();
+                    }
+
+                    if (!cards[2]) {
+                        cards[2] = doublyPassedHand.pop();
+                    }
+
                     cards.push(...passedHand);
                     cards.push(...speedCards);
+                    cards.push(...doublyPassedHand);
                     return cards;
                 }
             }
