@@ -1,5 +1,5 @@
 let iterations = 10000000;
-let players = 2;
+let players = 6;
 
 let currentStrategyCount = 6;
 let deckConfig = {
