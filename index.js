@@ -1294,58 +1294,56 @@ function selectCards(tableau, mostWaterPreviousRound) {
                 }
 
                 shuffleArray(tableau.hand);
-                let card = tableau.hand.pop();
 
-                if (myMostWater !== 0 && myMostWater >= mostWaterPreviousRound) {
-                    while (card !== undefined && card.name === 'Water') {
-                        if (!cards[1]) {
-                            cards[1] = card;
-                        } else if (!cards[2]) {
-                            cards[2] = card;
-                        } else {
-                            passedHand.push(card);
-                        }
+                let waterCards = [];
+                let nonWaterCards = [];
 
-                        card = tableau.hand.pop();
+                tableau.hand.map(c => {
+                    if (c.name === 'Water') {
+                        waterCards.push(c);
+                    } else {
+                        nonWaterCards.push(c);
                     }
-                } else {
-                    while (card !== undefined && card.name !== 'Water') {
-                        if (!cards[1] && card.name === 'Weather') {
-                            cards[1] = card;
-                        } else if (!cards[2] && card.name === 'Weather') {
-                            cards[2] = card;
-                        } else {
-                            passedHand.push(card);
-                        }
+                })
 
-                        card = tableau.hand.pop();
+                if (myMostWater === 0 && myMostWater < mostWaterPreviousRound) {
+                    cards[0] = waterCards.pop();
+                }
+
+                let weatherCards = [];
+                let nonWeatherCards = [];
+
+                nonWeatherCards.map(c => {
+                    if (c.name === 'Weather') {
+                        weatherCards.push(c);
+                    } else {
+                        nonWeatherCards.push(c);
                     }
-                }
-
-                cards[0] = card;
-
-                if (!cards[1]) {
-                    cards[1] = passedHand.pop();
-                }
-
-                if (!cards[2]) {
-                    cards[2] = passedHand.pop();
-                }
-
-                if (!cards[1]) {
-                    cards[1] = tableau.hand.pop();
-                }
-
-                if (!cards[2]) {
-                    cards[2] = tableau.hand.pop();
-                }
+                })
 
                 if (!cards[0]) {
-                    cards[0] = passedHand.pop();
+                    cards[0] = nonWeatherCards.pop();
                 }
 
-                cards.push(...passedHand);
-                cards.push(...tableau.hand);
+                if (!cards[1]) {
+                    cards[1] = weatherCards.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = weatherCards.pop();
+                }
+
+                if (!cards[1]) {
+                    cards[1] = nonWeatherCards.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = nonWeatherCards.pop();
+                }
+
+                cards.push(...waterCards);
+                cards.push(...weatherCards);
+                cards.push(...nonWeatherCards);
                 return cards;
             }
             break;
