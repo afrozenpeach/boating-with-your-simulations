@@ -1454,6 +1454,13 @@ function getBoatSize(tableau) {
             return;
         }
     }
+
+    for (let card of tableau.human2) {
+        if (card.name === 'Boat') {
+            tableau.boatSize = card.size;
+            return;
+        }
+    }
 }
 
 function scoreTableaus(playerTableaus) {
