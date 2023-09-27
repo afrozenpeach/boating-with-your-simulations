@@ -1,4 +1,4 @@
-let iterations = 10000000;
+let iterations = 1000000;
 let players = 6;
 
 let currentStrategyCount = 5;
@@ -1301,9 +1301,9 @@ function selectCards(tableau, mostWaterPreviousRound) {
                     }
                 } else {
                     while (card !== undefined && card.name !== 'Water') {
-                        if (!cards[1]) {
+                        if (!cards[1] && card.name === 'Weather') {
                             cards[1] = card;
-                        } else if (!cards[2]) {
+                        } else if (!cards[2] && card.name === 'Weather') {
                             cards[2] = card;
                         } else {
                             passedHand.push(card);
@@ -1314,6 +1314,14 @@ function selectCards(tableau, mostWaterPreviousRound) {
                 }
 
                 cards[0] = card;
+
+                if (!cards[1]) {
+                    cards[1] = passedHand.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = passedHand.pop();
+                }
 
                 if (!cards[1]) {
                     cards[1] = tableau.hand.pop();
