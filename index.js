@@ -996,10 +996,10 @@ function assignCard(card, tableau, mostWaterPreviousRound) {
             } else if (!tableau.human2Used && boaterContains(tableau.human2, card.name)) {
                 tableau.human2.push(card);
                 tableau.human2Used = true;
-            } else if (!tableau.human1Used) {
+            } else if (!tableau.human1Used && !boaterContains(tableau.human2, card.name)) {
                 tableau.human1.push(card);
                 tableau.human1Used = true;
-            } else if (!tableau.human2Used) {
+            } else if (!tableau.human2Used && !boaterContains(tableau.human1, card.name)) {
                 tableau.human2.push(card);
                 tableau.human2Used = true;
             } else {
