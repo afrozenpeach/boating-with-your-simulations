@@ -865,6 +865,9 @@ function assignCard(card, tableau, mostWaterPreviousRound) {
         case 'Boat':
             if (boaterContains(tableau.human1, card.name) || boaterContains(tableau.human2, card.name)) {
                 tableau.trash.push(card);
+            } else if (tableau.human1Used) {
+                tableau.human2.push(card);
+                tableau.human2Used = true;
             } else {
                 tableau.human1.push(card);
                 tableau.human1Used = true;
