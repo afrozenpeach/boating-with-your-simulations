@@ -1235,6 +1235,10 @@ function selectCards(tableau, mostWaterPreviousRound) {
                         cards[0] = card;
                     }
 
+                    if (!cards[0]) {
+                        cards[0] = doublyPassedHand.pop();
+                    }
+
                     if (!cards[1]) {
                         cards[1] = speedCards.pop();
                     }
