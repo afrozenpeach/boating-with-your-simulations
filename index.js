@@ -1,4 +1,4 @@
-let iterations = 1000000;
+let iterations = 10000000;
 let players = 6;
 
 let currentStrategyCount = 5;
