@@ -1,6 +1,7 @@
-let iterations = 1000000;
-let players = 2;
+let iterations = 10000000;
+let players = 6;
 
+let currentStrategyCount = 5;
 let deckConfig = {
     'deck6': [
         {
@@ -517,6 +518,11 @@ let threeWayTiedGames = 0;
 let fourWayTiedGames = 0;
 let fiveWayTiedGames = 0;
 let sixWayTiedGames = 0;
+let winningStrategies = [];
+
+for (let i = 0; i < currentStrategyCount; i++) {
+    winningStrategies[i] = 0;
+}
 
 for (let i = 1; i <= players; i++) {
     rankingAverages[i] = [];
@@ -591,15 +597,32 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
             'boatScore': 0,
             'legalSubstanceScore': 0,
             'trashScore': 0,
-            'finalScore': 0
+            'finalScore': 0,
+            'strategy': Math.floor(Math.random() * currentStrategyCount)
         });
     }
 
     for (let i = 0; i < turns; i++) {
-        for (let h = 0; h < players; h++) {
-            let hand = playerTableaus[h].hand;
+        countTableaus(playerTableaus);
 
-            shuffleArray(hand);
+        let mostWaterPreviousRound = 0;
+
+        for (let tableau of playerTableaus) {
+            if (tableau.waterHuman1Count > mostWaterPreviousRound) {
+                mostWaterPreviousRound = tableau.waterHuman1Count;
+            }
+
+            if (tableau.waterHuman2Count > mostWaterPreviousRound) {
+                mostWaterPreviousRound = tableau.waterHuman2Count;
+            }
+
+            if (tableau.waterDoggoCount > mostWaterPreviousRound) {
+                mostWaterPreviousRound = tableau.waterDoggoCount;
+            }
+        }
+
+        for (let h = 0; h < players; h++) {
+            let hand = selectCards(playerTableaus[h], mostWaterPreviousRound);
 
             let leftPlayer = h - 1 >= 0 ? h - 1 : players - 1;
             let rightPlayer = h + 1 < players ? h + 1 : 0;
@@ -613,7 +636,7 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
         }
 
         for (let tableau of playerTableaus) {
-            assignCards(tableau);
+            assignCards(tableau, mostWaterPreviousRound);
             tableau.hand = tableau.passedCards;
             tableau.passedCards = null;
         }
@@ -682,6 +705,10 @@ for (let iterationCount = 0; iterationCount < iterations; iterationCount++) {
 
     for (let i = 0; i < players; i++) {
         rankingAverages[i+1].push(sortedPlayers[i].finalScore);
+
+        if (i === 0) {
+            winningStrategies[sortedPlayers[i].strategy]++;
+        }
     }
 
     if (allEqual([sortedPlayers[0].finalScore, sortedPlayers[1].finalScore])) {
@@ -805,17 +832,27 @@ for (let i = 0; i < scores.length; i++) {
         console.log(i + ',' + scores[i]);
     }
 }
+console.log('');
+
+if (currentStrategyCount > 1) {
+    console.log('Winning Strategy');
+    console.log('----------------');
+    for (let i = 0; i < winningStrategies.length; i++) {
+        console.log(i + ',' + winningStrategies[i]);
+    }
+    console.log('');
+}
 
 //FUNCTIONS!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-function assignCards(tableau) {
-    assignCard(tableau.self, tableau);
+function assignCards(tableau, mostWaterPreviousRound) {
+    assignCard(tableau.self, tableau, mostWaterPreviousRound);
     tableau.self = null;
 
-    assignCard(tableau.leftHand, tableau);
+    assignCard(tableau.leftHand, tableau, mostWaterPreviousRound);
     tableau.leftHand = null;
 
-    assignCard(tableau.rightHand, tableau);
+    assignCard(tableau.rightHand, tableau, mostWaterPreviousRound);
     tableau.rightHand = null;
 
     tableau.human1Used = false;
@@ -823,7 +860,7 @@ function assignCards(tableau) {
     tableau.doggoUsed = false;
 }
 
-function assignCard(card, tableau) {
+function assignCard(card, tableau, mostWaterPreviousRound) {
     switch (card.name) {
         case 'Boat':
             if (boaterContains(tableau.human1, card.name) || boaterContains(tableau.human2, card.name)) {
@@ -930,13 +967,13 @@ function assignCard(card, tableau) {
             }
             break;
         case 'Water':
-            if (!tableau.human1Used && boaterContains(tableau.human1, card.name)) {
+            if (!tableau.human1Used && boaterContains(tableau.human1, card.name) <= mostWaterPreviousRound) {
                 tableau.human1.push(card);
                 tableau.human1Used = true;
-            } else if (!tableau.human2Used && boaterContains(tableau.human2, card.name)) {
+            } else if (!tableau.human2Used && boaterContains(tableau.human2, card.name) <= mostWaterPreviousRound) {
                 tableau.human2.push(card);
                 tableau.human2Used = true;
-            } else if (!tableau.doggoUsed && boaterContains(tableau.doggo, card.name)) {
+            } else if (!tableau.doggoUsed && boaterContains(tableau.doggo, card.name) <= mostWaterPreviousRound) {
                 tableau.doggo.push(card);
                 tableau.doggoUsed = true;
             } else if (!tableau.human1Used) {
@@ -1027,6 +1064,344 @@ function assignCard(card, tableau) {
     }
 }
 
+function selectCards(tableau, mostWaterPreviousRound) {
+    switch(tableau.strategy) {
+        case 0: //Randomize
+            shuffleArray(tableau.hand);
+            return tableau.hand;
+        case 1: //Pass on weather, hate draft weather
+            {
+                //cards[0] = self, cards[1] = left pass, cards[2] = right pass
+                let cards = [];
+                let passedHand = [];
+
+                shuffleArray(tableau.hand);
+                let card = tableau.hand.pop();
+
+                while (card !== undefined && card.name === 'Weather') {
+                    if (!cards[1]) {
+                        cards[1] = card;
+                    } else if (!cards[2]) {
+                        cards[2] = card;
+                    } else {
+                        passedHand.push(card);
+                    }
+
+                    card = tableau.hand.pop();
+                }
+                cards[0] = card;
+
+                if (!cards[1]) {
+                    cards[1] = tableau.hand.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = tableau.hand.pop();
+                }
+
+                if (!cards[0]) {
+                    cards[0] = passedHand.pop();
+                }
+
+                cards.push(...passedHand);
+                cards.push(...tableau.hand);
+                return cards;
+            }
+            break;
+        case 2: //I'm on a boat! Pass weather! Speed!
+            {
+                let cards = [];
+                let passedHand = [];
+
+                if (!boaterContains(tableau.human1, 'Boat') && !boaterContains(tableau.human2, 'Boat')) {
+                    tableau.hand.sort((a, b) => {
+                        if (b.size !== undefined) {
+                            b.size - a.size
+                        } else {
+                            return -1;
+                        }
+                    });
+
+                    let goodBoatSize = 10;
+
+                    if (players === 5) {
+                        goodBoatSize = 8;
+                    }
+
+                    if (players === 4) {
+                        goodBoatSize = 6;
+                    }
+
+                    if (players === 3) {
+                        goodBoatSize = 6;
+                    }
+
+                    if (players === 2) {
+                        goodBoatSize = 4;
+                    }
+
+                    let card = tableau.hand.shift();
+
+                    while (card !== undefined && card.name !== 'Boat' || (card !== undefined && card.name === 'Boat' && card.size < goodBoatSize)) {
+                        if (card !== undefined && card.name === 'Weather') {
+                            if (!cards[1]) {
+                                cards[1] = card;
+                            } else if (!cards[2]) {
+                                cards[2] = card;
+                            } else {
+                                passedHand.push(card);
+                            }
+                        } else {
+                            passedHand.push(card);
+                        }
+
+                        card = tableau.hand.shift();
+                    }
+
+                    if (card && card.name === 'Boat' && card.size >= goodBoatSize) {
+                        cards[0] = card;
+                    } else {
+                        //Try to take a speed
+                        let speedCards = [];
+                        let nonSpeedCards = [];
+                        passedHand.map(c => {
+                            if (c.name === 'Speed') {
+                                speedCards.push(c);
+                            } else {
+                                nonSpeedCards.push(c);
+                            }
+                        });
+                        cards[0] = speedCards.pop();
+                        passedHand = [];
+                        passedHand.push(...nonSpeedCards);
+                        passedHand.push(...speedCards);
+                    }
+
+                    if (!cards[0]) {
+                        cards[0] = tableau.hand.pop();
+                    }
+
+                    if (!cards[0]) {
+                        cards[0] = passedHand.pop();
+                    }
+
+                    if (!cards[1]) {
+                        cards[1] = passedHand.pop();
+                    }
+
+                    if (!cards[2]) {
+                        cards[2] = passedHand.pop();
+                    }
+
+                    if (!cards[1]) {
+                        cards[1] = tableau.hand.pop();
+                    }
+
+                    if (!cards[2]) {
+                        cards[2] = tableau.hand.pop();
+                    }
+
+                    cards.push(...tableau.hand);
+                    cards.push(...passedHand);
+                    return cards;
+                } else {
+                    let speedCards = [];
+                    tableau.hand.map(c => {
+                        if (c.name === 'Speed') {
+                            speedCards.push(c);
+                        } else {
+                            passedHand.push(c);
+                        }
+                    });
+                    cards[0] = speedCards.pop()
+
+                    if (!cards[0]) {
+                        let card = passedHand.pop();
+
+                        while (card !== undefined && card.name === 'Weather') {
+                            if (!cards[1]) {
+                                cards[1] = card;
+                            } else if (!cards[2]) {
+                                cards[2] = card;
+                            } else {
+                                passedHand.push(card);
+                            }
+
+                            card = passedHand.pop();
+                        }
+
+                        cards[0] = card;
+                    }
+
+                    if (!cards[1]) {
+                        cards[1] = speedCards.pop();
+                    }
+
+                    if (!cards[2]) {
+                        cards[2] = speedCards.pop();
+                    }
+
+                    if (!cards[1]) {
+                        cards[1] = passedHand.pop();
+                    }
+
+                    if (!cards[2]) {
+                        cards[2] = passedHand.pop();
+                    }
+
+                    cards.push(...passedHand);
+                    cards.push(...speedCards);
+                    return cards;
+                }
+            }
+            break;
+        case 3: //Maximize Water
+            {
+                let cards = [];
+                let passedHand = [];
+
+                let myMostWater = tableau.waterDoggoCount;
+                if (tableau.waterHuman1Count > myMostWater) {
+                    myMostWater = tableau.waterHuman1Count;
+                }
+
+                if (tableau.waterHuman2Count > myMostWater) {
+                    myMostWater = tableau.waterHuman2Count;
+                }
+
+                shuffleArray(tableau.hand);
+                let card = tableau.hand.pop();
+
+                if (myMostWater !== 0 && myMostWater >= mostWaterPreviousRound) {
+                    while (card !== undefined && card.name === 'Water') {
+                        if (!cards[1]) {
+                            cards[1] = card;
+                        } else if (!cards[2]) {
+                            cards[2] = card;
+                        } else {
+                            passedHand.push(card);
+                        }
+
+                        card = tableau.hand.pop();
+                    }
+                } else {
+                    while (card !== undefined && card.name !== 'Water') {
+                        if (!cards[1]) {
+                            cards[1] = card;
+                        } else if (!cards[2]) {
+                            cards[2] = card;
+                        } else {
+                            passedHand.push(card);
+                        }
+
+                        card = tableau.hand.pop();
+                    }
+                }
+
+                cards[0] = card;
+
+                if (!cards[1]) {
+                    cards[1] = tableau.hand.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = tableau.hand.pop();
+                }
+
+                if (!cards[0]) {
+                    cards[0] = passedHand.pop();
+                }
+
+                cards.push(...passedHand);
+                cards.push(...tableau.hand);
+                return cards;
+            }
+            break;
+        case 4: //Substances
+            {
+                let cards = [];
+                let passedHand = [];
+                let substanceCards = [];
+
+                tableau.hand.map(c => {
+                    if (c.name === 'Legal Substance') {
+                        substanceCards.push(c);
+                    } else {
+                        passedHand.push(c);
+                    }
+                });
+
+                substanceCards.sort((a, b) => {
+                    if (a.subname < b.subname) {
+                        return -1;
+                    } else if (a.subname > b.subname) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+
+                let card = substanceCards.pop();
+
+                while (card !== undefined && boaterContains(tableau.human1, 'Legal Substance', card.subname)) {
+                    passedHand.push(card);
+                    card = substanceCards.pop();
+                }
+
+                if (card) {
+                    cards[0] = card;
+                }
+
+                if (!cards[0]) {
+                    while (card !== undefined && boaterContains(tableau.human2, 'Legal Substance', card.subname)) {
+                        passedHand.push(card);
+                        card = substanceCards.pop();
+                    }
+
+                    if (card) {
+                        cards[0] = card;
+                    }
+
+                    if (!cards[0]) {
+                        while (card !== undefined && boaterContains(tableau.doggo, 'Legal Substance', card.subname)) {
+                            passedHand.push(card);
+                            card = substanceCards.pop();
+                        }
+
+                        if (card) {
+                            cards[0] = card;
+                        }
+                    }
+                }
+
+                if (!cards[0]) {
+                    cards[0] = passedHand.pop();
+                }
+
+                if (!cards[1]) {
+                    cards[1] = passedHand.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = passedHand.pop();
+                }
+
+                if (!cards[1]) {
+                    cards[1] = substanceCards.pop();
+                }
+
+                if (!cards[2]) {
+                    cards[2] = substanceCards.pop();
+                }
+
+                cards.push(...passedHand);
+                cards.push(...substanceCards);
+                return cards;
+            }
+            break;
+    }
+}
+
 function boaterContains(boater, cardName, subname) {
     let count = 0;
 
@@ -1075,6 +1450,7 @@ function scoreTableaus(playerTableaus) {
     let mostMusic = 0;
     let leastSpeed = deckConfig['deck' + players].filter(c => c.name === 'Speed')[0].count;
     let mostSpeed = 0;
+    let mostWater = 0;
 
     for (let h = 0; h < players; h++) {
         let tableau = playerTableaus[h];
@@ -1098,6 +1474,18 @@ function scoreTableaus(playerTableaus) {
             mostMusic = tableau.musicCount;
         }
 
+        if (tableau.waterDoggoCount > mostWater) {
+            mostWater = tableau.waterDoggoCount;
+        }
+
+        if (tableau.waterHuman1Count > mostWater) {
+            mostWater = tableau.waterHuman1Count;
+        }
+
+        if (tableau.waterHuman2Count > mostWater) {
+            mostWater = tableau.waterHuman2Count;
+        }
+
         if (tableau.speedCount > 0 && tableau.speedCount < leastSpeed) {
             leastSpeed = tableau.speedCount;
         }
@@ -1106,7 +1494,7 @@ function scoreTableaus(playerTableaus) {
             mostSpeed = tableau.speedCount;
         }
 
-        tableau.waterScore += waterCalculator(tableau.waterDoggoCount) + waterCalculator(tableau.waterHuman1Count) + waterCalculator(tableau.waterHuman2Count);
+        tableau.waterScore += waterCalculator(tableau.waterDoggoCount, mostWater) + waterCalculator(tableau.waterHuman1Count, mostWater) + waterCalculator(tableau.waterHuman2Count, mostWater);
 
         if (tableau.sunDoggoCount == 2) {
             tableau.sunScore += 5;
@@ -1160,7 +1548,11 @@ function scoreTableaus(playerTableaus) {
     }
 }
 
-function waterCalculator(count) {
+function waterCalculator(count, mostWater) {
+    if (count === mostWater) {
+        return 0;
+    }
+
     switch (count) {
         case 0:
             return 0;
